@@ -1,0 +1,21 @@
+# Root-level ignores
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+*.log
+.DS_Store
+.vscode/
+.ktlint/
+.cxx/
+
+# App module build outputs
+app/build/
+app/.gradle/
+app/.cxx/
+
+# Generated files
+**/build/
+*.kotlin_module
+
