@@ -295,6 +295,16 @@
                         android:textStyle="bold"
                         android:layout_marginTop="4dp"/>
 
+                    <TextView
+                        android:id="@+id/tvSuggestedDailySpend"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Daily limit: ₹0"
+                        android:textColor="@color/electric_blue"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:layout_marginTop="4dp"/>
+
                     <!-- Detailed Budget Info Row -->
                     <LinearLayout
                         android:layout_width="match_parent"

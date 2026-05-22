@@ -117,6 +117,9 @@ class MainActivity : AppCompatActivity() {
         viewModel.daysRemaining.observe(this) {
             updateProgressAndPace()
         }
+        viewModel.suggestedDailySpend.observe(this) { daily ->
+            binding.tvSuggestedDailySpend.text = "Daily limit: ${formatCurrency(daily)}"
+        }
     }
 
     private fun updateAiCoachText() {

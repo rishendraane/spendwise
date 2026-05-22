@@ -44,7 +44,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             // Sum up expenses whose dates lie between [startDate, nextDate]
             val sum = expenses.filter { it.date in startDate..nextDate }
                 .sumOf { it.amount }
-            postValue(sum)
+            value = sum
         }
         addSource(allExpenses) { update() }
         addSource(_nextSalaryDate) { update() }
@@ -55,7 +55,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         fun update() {
             val sal = _salary.value ?: 0.0
             val spent = totalSpentInCycle.value ?: 0.0
-            postValue(sal - spent)
+            value = sal - spent
         }
         addSource(_salary) { update() }
         addSource(totalSpentInCycle) { update() }
@@ -68,9 +68,25 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             val now = System.currentTimeMillis()
             val diffMs = nextDate - now
             val days = (diffMs / (1000 * 60 * 60 * 24)).coerceAtLeast(0)
-            postValue(days)
+            value = days
         }
         addSource(_nextSalaryDate) { update() }
+    }
+
+    // Suggested amount to spend per day (Remaining Salary / Days Remaining)
+    val suggestedDailySpend = MediatorLiveData<Double>().apply {
+        fun update() {
+            val remaining = remainingSalary.value ?: 0.0
+            val daysRem = daysRemaining.value ?: 30L
+            val dailyLimit = if (daysRem > 0) {
+                (remaining / daysRem).coerceAtLeast(0.0)
+            } else {
+                remaining.coerceAtLeast(0.0)
+            }
+            value = dailyLimit
+        }
+        addSource(remainingSalary) { update() }
+        addSource(daysRemaining) { update() }
     }
 
     // Spending score calculation
@@ -83,7 +99,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             val nextDate = nextSalaryDate.value ?: System.currentTimeMillis()
             
             if (expenses.isEmpty() || spent <= 0) {
-                postValue(10.0)
+                value = 10.0
                 return
             }
 
@@ -128,7 +144,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
 
             // Coerce score between 1.0 and 10.0
             val finalScore = String.format(Locale.US, "%.1f", score.coerceIn(1.0, 10.0)).toDouble()
-            postValue(finalScore)
+            value = finalScore
         }
         addSource(allExpenses) { update() }
         addSource(salary) { update() }
@@ -141,11 +157,16 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             val scoreVal = habitScore.value ?: 10.0
             val expenses = allExpenses.value ?: emptyList()
             val salLimit = salary.value ?: 30000.0
+            val spent = totalSpentInCycle.value ?: 0.0
+            val remainingVal = remainingSalary.value ?: 0.0
+            val daysRem = daysRemaining.value ?: 30L
             val nextDate = nextSalaryDate.value ?: System.currentTimeMillis()
             val cycleStart = getStartOfSalaryCycle(nextDate)
             
             if (expenses.isEmpty()) {
-                postValue("No transactions yet. Add some to analyze your spending habits! 💸")
+                val dailyBudgetVal2 = suggestedDailySpend.value ?: 0.0
+                val dailyBudgetStr2 = String.format(Locale.US, "%.0f", dailyBudgetVal2)
+                value = "\u2022 Daily Budget: Try to stay under \u20B9$dailyBudgetStr2 per day.\n\n\u2022 No transactions yet. Add some to start tracking your spending habits! \uD83D\uDCB8"
                 return
             }
 
@@ -154,37 +175,42 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             val shoppingSpent = cycleExpenses.filter { it.category.lowercase() == "shopping" }.sumOf { it.amount }
             val entertainmentSpent = cycleExpenses.filter { it.category.lowercase() == "entertainment" }.sumOf { it.amount }
 
-            when {
-                scoreVal >= 9.0 -> postValue("Perfect discipline! You're saving like a pro. Keep it up! 🌟")
-                scoreVal >= 7.5 -> postValue("Good job! Your expenses are largely balanced and healthy. 👍")
-                scoreVal >= 5.0 -> {
-                    val reasons = mutableListOf<String>()
-                    if (shoppingSpent > 0.15 * salLimit) reasons.add("Shopping 🛍️")
-                    if (entertainmentSpent > 0.10 * salLimit) reasons.add("Entertainment 🍿")
-                    if (foodSpent > 0.20 * salLimit) reasons.add("Food 🍔")
-                    
-                    if (reasons.isNotEmpty()) {
-                        postValue("Fair spending. Consider cutting down on ${reasons.joinToString(" & ")} to save more. 💡")
-                    } else {
-                        postValue("Moderate spending. Keep an eye on your daily budget pacing. 🧐")
-                    }
-                }
-                else -> {
-                    val warnings = mutableListOf<String>()
-                    if (shoppingSpent > 0.20 * salLimit) warnings.add("high Shopping")
-                    if (entertainmentSpent > 0.15 * salLimit) warnings.add("excessive Entertainment")
-                    
-                    if (warnings.isNotEmpty()) {
-                        postValue("High spending risk! Reduce ${warnings.joinToString(" and ")} immediately. ⚠️")
-                    } else {
-                        postValue("Critical budget warning! Your pacing is dangerously high. Slow down. 🛑")
-                    }
-                }
+            val totalCycleDays = ((nextDate - cycleStart) / (1000 * 60 * 60 * 24)).coerceAtLeast(1).toDouble()
+            val elapsedDays = (totalCycleDays - daysRem).coerceAtLeast(0.0)
+
+            val dailyBudgetVal = if (daysRem > 0) (remainingVal / daysRem).coerceAtLeast(0.0) else remainingVal.coerceAtLeast(0.0)
+            val dailyBudgetStr = String.format(Locale.US, "%.0f", dailyBudgetVal)
+
+            val tips = mutableListOf<String>()
+            tips.add("Daily Budget: Try to stay under ₹$dailyBudgetStr per day to extend your balance.")
+
+            if (foodSpent > 0.20 * salLimit) {
+                tips.add("Food spending is ₹${String.format(Locale.US, "%.0f", foodSpent)} (${String.format(Locale.US, "%.0f", foodSpent / salLimit * 100)}% of limit). Try cooking at home to save.")
             }
+            if (shoppingSpent > 0.15 * salLimit) {
+                tips.add("Shopping is high at ₹${String.format(Locale.US, "%.0f", shoppingSpent)} (${String.format(Locale.US, "%.0f", shoppingSpent / salLimit * 100)}% of limit). Postpone non-essential shopping.")
+            }
+            if (entertainmentSpent > 0.10 * salLimit) {
+                tips.add("Entertainment is ₹${String.format(Locale.US, "%.0f", entertainmentSpent)} (${String.format(Locale.US, "%.0f", entertainmentSpent / salLimit * 100)}% of limit). Look for free recreation.")
+            }
+
+            if (spent > salLimit) {
+                tips.add("Critical: Budget is fully depleted! Stop all non-essential expenses.")
+            } else if (salLimit > 0 && spent / salLimit > elapsedDays / totalCycleDays + 0.10) {
+                tips.add("Pacing: You are spending faster than days are passing. Slow down.")
+            }
+
+            if (tips.size <= 1) {
+                tips.add("Pacing looks great! Keep tracking daily expenses to hit your goals.")
+            }
+
+            value = tips.joinToString(separator = "\n\n") { "• $it" }
         }
         addSource(habitScore) { update() }
         addSource(allExpenses) { update() }
         addSource(salary) { update() }
+        addSource(remainingSalary) { update() }
+        addSource(daysRemaining) { update() }
     }
 
     val aiCoachInsight = MutableLiveData<String>().apply {
@@ -336,11 +362,18 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         checkAndRollForwardSalaryDate()
     }
 
-    // Computes the start of the current cycle (exactly one month before the next salary date)
+    // Computes the start of the current cycle by stepping back 1 month at a time
+    // until the start date is at or before today. This ensures today always falls
+    // within the [cycleStart, nextSalaryDate] range.
     fun getStartOfSalaryCycle(nextSalaryDateMs: Long): Long {
+        val now = System.currentTimeMillis()
         val cal = Calendar.getInstance()
         cal.timeInMillis = nextSalaryDateMs
         cal.add(Calendar.MONTH, -1)
+        // Keep stepping back if the start date is still in the future
+        while (cal.timeInMillis > now) {
+            cal.add(Calendar.MONTH, -1)
+        }
         return cal.timeInMillis
     }
 
