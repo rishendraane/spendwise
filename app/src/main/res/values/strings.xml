@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SpendWise</string>
+    <string name="total_spent">Total spent</string>
+    <string name="recent_expenses">Recent expenses</string>
+    <string name="no_expenses_yet">No expenses yet. Add your first transaction.</string>
+    <string name="add_expense">Add expense</string>
+    <string name="title">Title</string>
+    <string name="amount">Amount</string>
+    <string name="category">Category</string>
+    <string name="description">Description</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="expense_saved">Expense saved</string>
+    <string name="delete_expense">Delete expense</string>
+    <string name="invalid_input_message">Please enter a valid title and amount.</string>
+    <string name="expense_count_format">%1$d expenses</string>
+    <string name="total_spent_format">%1$s</string>
+</resources>
