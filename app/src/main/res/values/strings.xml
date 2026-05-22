@@ -16,4 +16,15 @@
     <string name="invalid_input_message">Please enter a valid title and amount.</string>
     <string name="expense_count_format">%1$d expenses</string>
     <string name="total_spent_format">%1$s</string>
+    
+    <string name="monthly_salary_title">Monthly Salary Limit</string>
+    <string name="salary_settings">Salary Settings</string>
+    <string name="remaining_salary_label">Remaining Balance</string>
+    <string name="spending_score">Spend Score</string>
+    <string name="local_rating_title">Habit Score</string>
+    <string name="ai_coach_title">AI Spending Coach</string>
+    <string name="ask_ai_coach">Get AI Coach Review</string>
+    <string name="loading_ai_review">Analyzing transactions with AI...</string>
+    <string name="ai_review_default">Get a personalized review of your transactions from the NVIDIA AI Coach.</string>
+    <string name="add_sample_data">Load Sample Data</string>
 </resources>
